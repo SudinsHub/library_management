@@ -1,0 +1,12 @@
+#issue {
+    width: 50%;
+    margin: 20px auto;
+}
+
+.form-control {
+    margin-bottom: 15px;
+}
+
+.alert {
+    margin-top: 10px;
+}
