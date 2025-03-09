@@ -65,18 +65,6 @@ class LIBRARY {
         });
         ;
 
-        // nosto
-        //GET LIST OF BOOKS BY SEMESTER
-        this.app.get('/api/getBooks/:id', (req, res) => {
-            let sql = `SELECT * FROM book where semester = '${req.params.id}'`;
-            this.db.query(sql, (err, result) => {
-                if(err)
-                    console.log(err);
-                else
-                    console.log("Successfully extracted books");
-                res.send(result);
-            });
-        });
 
         //GET ALL THE ISSUED BOOKS BY A MEMBER
         //done
@@ -84,7 +72,7 @@ class LIBRARY {
             
             let sql = `SELECT book.title as title, book.author as author, borrow.return_date as return_date, borrow.borrow_date as borrow_date, member.name as sname, member.member_id as member_id, book.book_id as book_id\
                        FROM book, member, borrow\
-                       where borrow.member_id = '${req.params.member_id}' and book.book_id = borrow.book_id and member.member_id = '${req.params.member_id}'`;
+                       where borrow.member_id = '${req.params.member_id}' and book.book_id = borrow.book_id and member.member_id = '${req.params.member_id}'  and borrow.status = 'Borrowed'`;
 
             this.db.query(sql, (err, result) => {
                 if(err)
@@ -133,7 +121,8 @@ class LIBRARY {
         //done
         this.app.post('/api/addBook', (req, res) => {
             const { title, author, copies, publication_year, category } = req.body;
-        
+            console.log(title, author, copies, publication_year, category);
+            
             // Step 1: Check if the book already exists
             let checkBookSql = `SELECT * FROM BOOK WHERE title = ?`;
             this.db.query(checkBookSql, [title], (err, result) => {
@@ -209,8 +198,8 @@ class LIBRARY {
         //BORROW A BOOK
         //done
         this.app.post('/api/borrow', (req, res) => {
-            let sql = [`INSERT INTO BORROW(member_id, book_id, return_date) VALUES (${req.body.member_id}, ${req.body.book_id}, ${req.body.return_date});`,
-                       `Update BOOK SET count = count - 1 WHERE id = ${req.body.book_id}`];
+            let sql = [`INSERT INTO BORROW(member_id, book_id, return_date) VALUES (${req.body.member_id}, ${req.body.book_id}, '${req.body.return_date}');`,
+                       `Update BOOK SET available_copies = available_copies - 1 WHERE book_id = ${req.body.book_id}`];
 
                 for(let i = 0; i < sql.length; i++){
                     this.db.query(sql[i], (err, result) => {
@@ -221,10 +210,12 @@ class LIBRARY {
                         else
                             console.log("Successfully inserted");
                     });
-                    if(this.temp)
-                        break;
                 }
-        });
+                if(this.temp)
+                    return res.status(500).send("Failed to Issue!");
+                return res.status(201).send("Successfully Issued!");
+
+            });
 
         //RETURN A BOOK, UPDATE FINE IF ANY
         //done
@@ -232,8 +223,8 @@ class LIBRARY {
             const {book_id, member_id} = req.body;
             let sql = [`SELECT return_date from borrow\
                         WHERE book_id = ${book_id} and member_id = ${member_id}`,
-                       `DELETE FROM borrow WHERE book_id = ${book_id} and member_id = ${member_id}`,
-                       `UPDATE BOOK SET count = count + 1 WHERE id = ${book_id}`];
+                       `UPDATE borrow SET status = 'Returned' WHERE book_id = ${book_id} and member_id = ${member_id}`,
+                       `UPDATE BOOK SET available_copies = available_copies + 1 WHERE book_id = ${book_id}`];
 
             for(let i = 0; i < sql.length; i++){
                 this.db.query(sql[i], (err, result) => {

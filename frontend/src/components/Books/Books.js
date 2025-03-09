@@ -19,11 +19,11 @@ class Books extends React.Component {
     };
 
     async componentDidMount() {
-        await this.fetchBooks(); // Fetch all books initially
+        await this.fetchBooks(); 
     }
 
-    fetchBooks = async (searchQuery = '') => {
-        const queryParam = searchQuery ? `?search=${searchQuery}` : '';
+    fetchBooks = async () => {
+        const queryParam = this.state.searchQuery ? `?search=${this.state.searchQuery}` : '';
         await fetch(`/api/getBooks${queryParam}`)
             .then((res) => res.json())
             .then((books) => {
@@ -40,12 +40,12 @@ class Books extends React.Component {
             })
             .catch((err) => console.error('Error fetching books:', err));
     };
+    
 
     handleSearchChange = (event) => {
-        const searchQuery = event.target.value;
-        this.setState({ searchQuery });
-        this.fetchBooks(searchQuery);
+        this.setState({ searchQuery: event.target.value });
     };
+    
 
     render() {
         return (
@@ -57,10 +57,13 @@ class Books extends React.Component {
                         className="form-control"
                         placeholder="Search by title..."
                         value={this.state.searchQuery}
+                        onChange={this.handleSearchChange} // Just updates state
                     />
-                    <button className="btn btn-success" onClick={this.handleSearchChange}>
+
+                    <button className="btn btn-success" onClick={this.fetchBooks}>
                         Search
                     </button>
+
                 </div>
                 <table id="results" className="table text-center table-hover">
                     {this.state.header}
