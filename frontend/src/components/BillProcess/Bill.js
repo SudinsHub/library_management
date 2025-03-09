@@ -7,6 +7,13 @@ class Bill extends React.Component {
         memberId: '',
         errorMessage: '',
         successMessage: '',
+        showModal: false,
+        newBill: {
+            member_id: '',
+            amount: '',
+            bill_type: 'Fine',
+            description: '',
+        },
     };
 
     fetchBills = () => {
@@ -34,7 +41,7 @@ class Bill extends React.Component {
 
     updateBillStatus = (billId, status) => {
         fetch(`/api/updateBillStatus`, {
-            method: 'post',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ bill_id: billId, status }),
         })
@@ -44,8 +51,8 @@ class Bill extends React.Component {
                         bills: prevState.bills.map((bill) =>
                             bill.bill_id === billId ? { ...bill, payment_status: status } : bill
                         ),
-                        errorMessage: '',
                         successMessage: `Bill status updated to "${status}" successfully!`,
+                        errorMessage: '',
                     }));
                 } else {
                     this.setState({ errorMessage: 'Failed to update bill status.', successMessage: '' });
@@ -54,6 +61,55 @@ class Bill extends React.Component {
             .catch((err) => {
                 console.error('Error updating bill status:', err);
                 this.setState({ errorMessage: 'An error occurred while updating bill status.', successMessage: '' });
+            });
+    };
+
+    handleModalOpen = () => {
+        this.setState({ showModal: true });
+    };
+
+    handleModalClose = () => {
+        this.setState({ showModal: false, errorMessage: '', successMessage: '' });
+    };
+
+    handleInputChange = (e) => {
+        const { name, value } = e.target;
+        this.setState((prevState) => ({
+            newBill: { ...prevState.newBill, [name]: value },
+        }));
+    };
+
+    addNewBill = () => {
+        const { newBill } = this.state;
+
+        if (!newBill.member_id || !newBill.amount) {
+            this.setState({ errorMessage: 'Member ID and amount are required!' });
+            return;
+        }
+
+        fetch(`/api/addBill`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newBill),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.message) {
+                    this.setState((prevState) => ({
+                        bills: [
+                            ...prevState.bills,
+                            { bill_id: data.bill_id, ...newBill, payment_status: 'Pending' },
+                        ],
+                        successMessage: 'New bill added successfully!',
+                        errorMessage: '',
+                        showModal: false,
+                        newBill: { member_id: '', amount: '', bill_type: 'Fine', description: '' },
+                    }));
+                }
+            })
+            .catch((err) => {
+                console.error('Error adding bill:', err);
+                this.setState({ errorMessage: 'An error occurred while adding the bill.', successMessage: '' });
             });
     };
 
@@ -73,14 +129,13 @@ class Bill extends React.Component {
                 <button className="btn btn-success" onClick={this.fetchBills}>
                     Submit
                 </button>
-                <br />
-                <br />
-                {this.state.errorMessage && (
-                    <div className="alert alert-danger">{this.state.errorMessage}</div>
-                )}
-                {this.state.successMessage && (
-                    <div className="alert alert-success">{this.state.successMessage}</div>
-                )}
+                <button className="btn btn-primary ml-2" onClick={this.handleModalOpen}>
+                    New Bill
+                </button>
+
+                {this.state.errorMessage && <div className="alert alert-danger">{this.state.errorMessage}</div>}
+                {this.state.successMessage && <div className="alert alert-success">{this.state.successMessage}</div>}
+
                 {this.state.bills.length > 0 && (
                     <table className="table table-hover">
                         <thead>
@@ -99,23 +154,17 @@ class Bill extends React.Component {
                                 <tr key={bill.bill_id}>
                                     <td>{bill.bill_id}</td>
                                     <td>{bill.issue_date}</td>
-                                    <td>{bill.amount.toFixed(2)}</td>
+                                    <td>{bill.amount}</td>
                                     <td>{bill.bill_type}</td>
                                     <td>{bill.description || 'N/A'}</td>
                                     <td>{bill.payment_status}</td>
                                     <td>
                                         {bill.payment_status === 'Pending' && (
                                             <>
-                                                <button
-                                                    className="btn btn-primary"
-                                                    onClick={() => this.updateBillStatus(bill.bill_id, 'Paid')}
-                                                >
-                                                    Mark as Paid
+                                                <button className="btn btn-primary" onClick={() => this.updateBillStatus(bill.bill_id, 'Paid')}>
+                                                    Paid
                                                 </button>
-                                                <button
-                                                    className="btn btn-danger"
-                                                    onClick={() => this.updateBillStatus(bill.bill_id, 'Cancelled')}
-                                                >
+                                                <button className="btn btn-danger" onClick={() => this.updateBillStatus(bill.bill_id, 'Cancelled')}>
                                                     Cancel
                                                 </button>
                                             </>
@@ -126,9 +175,62 @@ class Bill extends React.Component {
                         </tbody>
                     </table>
                 )}
+
+                {/* Modal for Adding New Bill */}
+                {this.state.showModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <h3>Add New Bill</h3>
+                            <input
+                                type="number"
+                                name="member_id"
+                                placeholder="Member ID"
+                                className="form-control"
+                                value={this.state.newBill.member_id}
+                                onChange={this.handleInputChange}
+                            />
+                            <input
+                                type="number"
+                                name="amount"
+                                placeholder="Amount"
+                                className="form-control mt-2"
+                                value={this.state.newBill.amount}
+                                onChange={this.handleInputChange}
+                            />
+                            <select
+                                name="bill_type"
+                                className="form-control mt-2"
+                                value={this.state.newBill.bill_type}
+                                onChange={this.handleInputChange}
+                            >
+                                <option value="Fine">Fine</option>
+                                <option value="Membership">Membership</option>
+                                <option value="Reservation">Reservation</option>
+                                <option value="Service">Service</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <input
+                                type="text"
+                                name="description"
+                                placeholder="Description"
+                                className="form-control mt-2"
+                                value={this.state.newBill.description}
+                                onChange={this.handleInputChange}
+                            />
+                            <button className="btn btn-success mt-3" onClick={this.addNewBill}>
+                                Submit
+                            </button>
+                            <button className="btn btn-secondary mt-3 ml-2" onClick={this.handleModalClose}>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
 }
+
+
 
 export default Bill;

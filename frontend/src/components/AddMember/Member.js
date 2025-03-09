@@ -1,7 +1,7 @@
 import React from 'react';
 import './Member.css';
 
-class Member extends React.Component {
+class AddMember extends React.Component {
     state = {
         successMessage: '',
         errorMessage: ''
@@ -85,4 +85,4 @@ class Member extends React.Component {
     }
 }
 
-export default Member;
+export default AddMember;

@@ -27,10 +27,11 @@ class LIBRARY {
     }
 
     get() {
+        // Get bills by member_id
         this.app.get('/api/getBills/:memberId', (req, res) => {
             const memberId = req.params.memberId;
             const sql = `SELECT * FROM BILL WHERE member_id = ?`;
-        
+
             this.db.query(sql, [memberId], (err, result) => {
                 if (err) {
                     console.error(err);
@@ -40,6 +41,37 @@ class LIBRARY {
                 }
             });
         });
+
+        // Update bill status
+        this.app.post('/api/updateBillStatus', (req, res) => {
+            const { bill_id, status } = req.body;
+
+            const sql = `UPDATE BILL SET payment_status = ? WHERE bill_id = ?`;
+            this.db.query(sql, [status, bill_id], (err, result) => {
+                if (err) {
+                    console.error(err);
+                    res.status(500).send('Error updating bill status');
+                } else {
+                    res.send({ message: 'Bill status updated successfully!' });
+                }
+            });
+        });
+
+        // Add a new bill
+        this.app.post('/api/addBill', (req, res) => {
+            const { member_id, amount, bill_type, description } = req.body;
+
+            const sql = `INSERT INTO BILL (member_id, amount, bill_type, description) VALUES (?, ?, ?, ?)`;
+            this.db.query(sql, [member_id, amount, bill_type, description || null], (err, result) => {
+                if (err) {
+                    console.error(err);
+                    res.status(500).send('Error adding bill');
+                } else {
+                    res.send({ message: 'Bill added successfully!', bill_id: result.insertId });
+                }
+            });
+        });
+
         
         //GET LIST OF ALL THE BOOKS
         //done
@@ -64,6 +96,29 @@ class LIBRARY {
             });
         });
         ;
+
+        // get members
+        this.app.get('/api/getMembers', (req, res) => {
+            const searchQuery = req.query.search || ''; // Get the search query from the request
+            let sql = `SELECT * FROM MEMBER`;
+        
+            // If a search query is provided, add a WHERE clause
+            if (searchQuery) {
+                sql += ` WHERE name LIKE ?`;
+            }
+        
+            const params = searchQuery ? [`%${searchQuery}%`] : [];
+        
+            this.db.query(sql, params, (err, result) => {
+                if (err) {
+                    console.error(err);
+                    res.status(500).send('Error fetching members');
+                } else {
+                    res.send(result);
+                }
+            });
+        });
+        
 
 
         //GET ALL THE ISSUED BOOKS BY A MEMBER

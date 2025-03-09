@@ -3,8 +3,8 @@ import Nav from './components/Nav/Nav';
 import Books from './components/Books/Books';
 import Issue from './components/Issue/Issue';
 import Return from './components/Return/Return';
-import Search from './components/search/search';
-import Member from './components/AddMember/Member'
+import AddMember from './components/AddMember/Member'
+import Member from './components/Member/Member'
 import AddBook from './components/AddBook/AddBook'
 import Bill from './components/BillProcess/Bill'
 import './App.css';
@@ -19,7 +19,8 @@ class App extends React.Component {
         <Switch>
           <Route path='/' exact strict component={Books}/>
           <Route path='/issue' exact strict component={Issue}/>
-          <Route path='/add-member' exact strict component={Member}/>
+          <Route path='/add-member' exact strict component={AddMember}/>
+          <Route path='/get-member' exact strict component={Member}/>
           <Route path='/add-book' exact strict component={AddBook}/>
           <Route path='/return' exact strict component={Return}/>
           <Route path='/bill' exact strict component={Bill}/>
